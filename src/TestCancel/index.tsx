@@ -1,5 +1,24 @@
-import { useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import cancelApi from "./cancelApi"
+import { debounce } from "lodash"
+
+const Input = () => {
+    const [value, setValue] = useState("")
+    const lastRequestRef = useRef<any>()
+    const [trigger] = cancelApi.useLazyGetInfoQuery()
+    const triggerDebounced = useMemo(() => debounce(trigger, 300), [trigger])
+
+    const fetcher = useCallback(() => {
+        lastRequestRef.current?.abort()
+        lastRequestRef.current = triggerDebounced(undefined)
+    }, [])
+
+    useEffect(() => {
+        fetcher()
+    }, [value, fetcher])
+
+    return <input value={value} onChange={(e) => setValue(e.target.value)} />
+}
 
 const TestCancel = () => {
     const [trigger, result] = cancelApi.useLazyGetInfoQuery()
@@ -42,6 +61,8 @@ const TestCancel = () => {
             >
                 Cancel
             </button>
+
+            <Input />
             <p>{JSON.stringify(result, null, 4)}</p>
         </div>
     )
